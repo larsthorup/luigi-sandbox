@@ -2,6 +2,13 @@ import requests
 import luigi
 from luigi.format import UTF8
 from bs4 import BeautifulSoup
+from collections import Counter
+import pickle
+
+
+class GlobalParams(luigi.Config):
+    NumberBooks = luigi.IntParameter(default=10)
+    NumberTopWords = luigi.IntParameter(default=500)
 
 
 class GetTopBooks(luigi.Task):
@@ -57,3 +64,53 @@ class DownloadBooks(luigi.Task):
 
                 book_text = book_text.lower()
                 outfile.write(book_text)
+
+
+class CountWords(luigi.Task):
+    """
+    Count the frequency of the most common words from a file
+    """
+
+    FileID = luigi.IntParameter()
+
+    def requires(self):
+        return DownloadBooks(FileID=self.FileID)
+
+    def output(self):
+        return luigi.LocalTarget(
+            "data/counts/count_{}.pickle".format(self.FileID),
+            format=luigi.format.Nop
+        )
+
+    def run(self):
+        with self.input().open("r") as i:
+            word_count = Counter(i.read().split())
+
+            with self.output().open("w") as outfile:
+                pickle.dump(word_count, outfile)
+
+
+class TopWords(luigi.Task):
+    """
+    Aggregate the count results from the different files
+    """
+
+    def requires(self):
+        requiredInputs = []
+        for i in range(GlobalParams().NumberBooks):
+            requiredInputs.append(CountWords(FileID=i))
+        return requiredInputs
+
+    def output(self):
+        return luigi.LocalTarget("data/summary.txt")
+
+    def run(self):
+        total_count = Counter()
+        for input in self.input():
+            with input.open("rb") as infile:
+                nextCounter = pickle.load(infile)
+                total_count += nextCounter
+
+        with self.output().open("w") as f:
+            for item in total_count.most_common(GlobalParams().NumberTopWords):
+                f.write("{0: <15}{1}\n".format(*item))

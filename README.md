@@ -1,5 +1,7 @@
 # luigi-sandbox
 
+https://www.digitalocean.com/community/tutorials/how-to-build-a-data-processing-pipeline-using-luigi-in-python-on-ubuntu-20-04
+
 ## setup
 
 ```
@@ -27,6 +29,5 @@ luigid --port 8082
 ## frequency
 
 ```
-python -m luigi --module frequency GetTopBooks
-python -m luigi --module frequency DownloadBooks --FileID 2
+python -m luigi --module frequency TopWords --GlobalParams-NumberBooks 15 --GlobalParams-NumberTopWords 750
 ```
