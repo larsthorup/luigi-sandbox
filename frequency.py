@@ -4,6 +4,7 @@ from luigi.format import UTF8
 from bs4 import BeautifulSoup
 from collections import Counter
 import pickle
+import datetime
 
 
 class GlobalParams(luigi.Config):
@@ -21,6 +22,13 @@ class GetTopBooks(luigi.Task):
 
     def run(self):
         resp = requests.get("http://www.gutenberg.org/browse/scores/top")
+
+        # simulate busy work
+        # start = datetime.datetime.now()
+        # while (datetime.datetime.now() - start).seconds < 60 * 20:
+        #     data = []
+        #     for i in range(1000):
+        #         data.append(i)
 
         soup = BeautifulSoup(resp.content, "html.parser")
 
@@ -102,7 +110,7 @@ class TopWords(luigi.Task):
         return requiredInputs
 
     def output(self):
-        return luigi.LocalTarget("data/summary.txt")
+        return luigi.LocalTarget("data/summary.txt", format=UTF8)
 
     def run(self):
         total_count = Counter()
